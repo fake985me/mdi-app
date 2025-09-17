@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { defineStore } from 'pinia'
 
 // Create axios instance with default config
 const apiClient = axios.create({
