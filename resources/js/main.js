@@ -1,15 +1,11 @@
-import './bootstrap';
-import { createApp } from 'vue';
-import { createPinia } from 'pinia';
-import App from './App.vue';
-import router from './router/router.js';
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
+import router from './router'
+import App from './App.vue'
+import './style.css'
 
-// Create a new Vue application
-const app = createApp(App);
+const app = createApp(App)
 
-// Use the router
-app.use(createPinia());
-app.use(router);
-
-// Mount the Vue application to the element with id 'app'
-app.mount('#app');
+app.use(createPinia())
+app.use(router)
+app.mount('#app')
