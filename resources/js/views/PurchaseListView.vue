@@ -1,0 +1,204 @@
+<template>
+  <div>
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold">{{ t('purchases') }}</h1>
+      <router-link 
+        :to="{ name: 'PurchaseCreate' }" 
+        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+      >
+        {{ t('create') }}
+      </router-link>
+    </div>
+    
+    <div class="bg-white shadow-md rounded-lg overflow-hidden">
+      <div class="p-4 border-b">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div class="flex-1">
+            <input
+              type="text"
+              :placeholder="t('search') + '...'"
+              v-model="searchQuery"
+              @input="searchPurchases"
+              class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div class="flex gap-2">
+            <select 
+              v-model="perPage" 
+              @change="fetchPurchases"
+              class="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="10">10 {{ t('purchases') }}</option>
+              <option value="25">25 {{ t('purchases') }}</option>
+              <option value="50">50 {{ t('purchases') }}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('purchase_number') }}</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('supplier') }}</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('date') }}</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('total') }}</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('actions') }}</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <tr v-for="purchase in purchases" :key="purchase.id">
+              <td class="px-6 py-4 whitespace-nowrap">{{ purchase.purchase_number }}</td>
+              <td class="px-6 py-4 whitespace-nowrap">{{ purchase.supplier?.name }}</td>
+              <td class="px-6 py-4 whitespace-nowrap">{{ formatDate(purchase.date) }}</td>
+              <td class="px-6 py-4 whitespace-nowrap">Rp {{ purchase.total.toLocaleString() }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <router-link 
+                  :to="{ name: 'PurchaseDetail', params: { id: purchase.id } }" 
+                  class="text-indigo-600 hover:text-indigo-900 mr-3"
+                >
+                  {{ t('view') }}
+                </router-link>
+                <button 
+                  @click="deletePurchase(purchase.id)" 
+                  class="text-red-600 hover:text-red-900"
+                >
+                  {{ t('delete') }}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="px-4 py-3 border-t bg-gray-50 flex items-center justify-between">
+        <div class="text-sm text-gray-700">
+          {{ t('showing') }} {{ (currentPage - 1) * perPage + 1 }} - {{ Math.min(currentPage * perPage, totalItems) }} {{ t('of') }} {{ totalItems }} {{ t('purchases') }}
+        </div>
+        <div class="flex space-x-2">
+          <button
+            @click="changePage(currentPage - 1)"
+            :disabled="currentPage === 1"
+            class="px-3 py-1 rounded border bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >
+            {{ t('previous') }}
+          </button>
+          
+          <button
+            @click="changePage(page)"
+            v-for="page in totalPages"
+            :key="page"
+            :class="{
+              'px-3 py-1 rounded border bg-blue-500 text-white': page === currentPage,
+              'px-3 py-1 rounded border bg-white text-gray-700 hover:bg-gray-50': page !== currentPage
+            }"
+          >
+            {{ page }}
+          </button>
+          
+          <button
+            @click="changePage(currentPage + 1)"
+            :disabled="currentPage === totalPages"
+            class="px-3 py-1 rounded border bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >
+            {{ t('next') }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import { ref, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
+import axios from 'axios';
+
+export default {
+  name: 'PurchaseListView',
+  setup() {
+    const { t } = useI18n();
+    const purchases = ref([]);
+    const totalItems = ref(0);
+    const currentPage = ref(1);
+    const perPage = ref(10);
+    const searchQuery = ref('');
+
+    const fetchPurchases = async () => {
+      try {
+        const response = await axios.get('/api/purchases', {
+          params: {
+            page: currentPage.value,
+            per_page: perPage.value,
+            search: searchQuery.value
+          },
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        purchases.value = response.data.data;
+        totalItems.value = response.data.total;
+        currentPage.value = response.data.current_page;
+      } catch (error) {
+        console.error('Error fetching purchases:', error);
+      }
+    };
+
+    const changePage = (page) => {
+      if (page >= 1 && page <= totalPages.value) {
+        currentPage.value = page;
+        fetchPurchases();
+      }
+    };
+
+    const searchPurchases = () => {
+      currentPage.value = 1;
+      fetchPurchases();
+    };
+
+    const deletePurchase = async (id) => {
+      if (confirm(t('delete_confirmation'))) {
+        try {
+          await axios.delete(`/api/purchases/${id}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+          fetchPurchases(); // Refresh the list
+        } catch (error) {
+          console.error('Error deleting purchase:', error);
+        }
+      }
+    };
+
+    const formatDate = (dateString) => {
+      const options = { year: 'numeric', month: 'short', day: 'numeric' };
+      return new Date(dateString).toLocaleDateString(undefined, options);
+    };
+
+    // Computed properties
+    const totalPages = () => Math.ceil(totalItems.value / perPage.value);
+
+    onMounted(() => {
+      fetchPurchases();
+    });
+
+    return {
+      t,
+      purchases,
+      totalItems,
+      currentPage,
+      perPage,
+      searchQuery,
+      totalPages,
+      fetchPurchases,
+      changePage,
+      searchPurchases,
+      deletePurchase,
+      formatDate
+    };
+  }
+};
+</script>
