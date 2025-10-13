@@ -35,6 +35,9 @@
                 Status
               </th>
               <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Public
+              </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Last Modified
               </th>
               <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -81,6 +84,17 @@
                 >
                   {{ page.is_active ? 'Published' : 'Draft' }}
                 </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <button
+                  @click="togglePublicStatus(page)"
+                  :class="[
+                    'px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full',
+                    page.is_public ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                  ]"
+                >
+                  {{ page.is_public ? 'Public' : 'Private' }}
+                </button>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {{ formatDate(page.updated_at) }}
@@ -154,6 +168,22 @@ const deletePage = async (id) => {
       console.error('Error deleting page:', error)
       alert('Error deleting page: ' + error.message)
     }
+  }
+}
+
+const togglePublicStatus = async (page) => {
+  try {
+    // Toggle the current status
+    const updatedPage = {
+      ...page,
+      is_public: !page.is_public
+    };
+    
+    await pageStore.updatePage(page.id, updatedPage);
+    await loadPages(); // Refresh the list after update
+  } catch (error) {
+    console.error('Error updating page public status:', error);
+    alert('Error updating page public status: ' + error.message);
   }
 }
 

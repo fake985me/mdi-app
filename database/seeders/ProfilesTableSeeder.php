@@ -41,7 +41,6 @@ class ProfilesTableSeeder extends Seeder
                 'email' => 'superadmin@example.com',
                 'full_name' => 'Super Admin',
                 'role' => 'superadmin',
-                'permissions' => null,
             ]);
         }
     }

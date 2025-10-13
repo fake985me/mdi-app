@@ -31,6 +31,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // Public routes - change to avoid conflict
 Route::get('/public/pages/{slug}', [App\Http\Controllers\Api\PageController::class, 'getBySlug']);
+Route::get('/public/pages', [App\Http\Controllers\Api\PageController::class, 'getActivePublicPages']);
+Route::get('/public/navigation', [App\Http\Controllers\Api\NavigationItemController::class, 'getActivePublicNavigation']);
 
 Route::get('/public/home', [App\Http\Controllers\Api\PageController::class, 'getHomePage']);
 
@@ -66,6 +68,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Borrowing routes
     Route::apiResource('borrowings', App\Http\Controllers\Api\BorrowingController::class);
     
+    // Navigation management routes
+    Route::apiResource('navigation-items', App\Http\Controllers\Api\NavigationItemController::class);
+    
     // Order routes
     Route::apiResource('orders', App\Http\Controllers\Api\OrderController::class);
     
@@ -92,6 +97,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::get('/admin/subcategories', [App\Http\Controllers\Api\SubcategoryController::class, 'index']);
     Route::get('/admin/orders', [App\Http\Controllers\Api\OrderController::class, 'index']);
     Route::get('/admin/pages', [App\Http\Controllers\Api\PageController::class, 'index']);
+    Route::get('/admin/navigation', [App\Http\Controllers\Api\NavigationItemController::class, 'index']);
 });  
   
   

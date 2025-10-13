@@ -39,6 +39,7 @@ class PageController extends Controller
             'custom_css' => 'nullable|array',
             'custom_js' => 'nullable|array',
             'is_active' => 'boolean',
+            'is_public' => 'boolean',
             'sort_order' => 'integer'
         ]);
 
@@ -102,6 +103,7 @@ class PageController extends Controller
             'custom_css' => 'nullable|array',
             'custom_js' => 'nullable|array',
             'is_active' => 'boolean',
+            'is_public' => 'boolean',
             'sort_order' => 'integer'
         ]);
 
@@ -186,7 +188,7 @@ class PageController extends Controller
         }
         
         // Otherwise, treat as a slug lookup (public access)
-        $page = Page::where('slug', $slug)->where('is_active', true)->first();
+        $page = Page::where('slug', $slug)->where('is_active', true)->where('is_public', true)->first();
         
         if (!$page) {
             return response()->json([
@@ -196,6 +198,21 @@ class PageController extends Controller
         
         return response()->json([
             'data' => $page
+        ]);
+    }
+
+    /**
+     * Get all active public pages
+     */
+    public function getActivePublicPages(): JsonResponse
+    {
+        $pages = Page::where('is_active', true)
+                    ->where('is_public', true)
+                    ->orderBy('sort_order')
+                    ->get();
+
+        return response()->json([
+            'data' => $pages
         ]);
     }
 }

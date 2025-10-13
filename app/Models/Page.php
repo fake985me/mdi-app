@@ -20,6 +20,7 @@ class Page extends Model
         'custom_css',
         'custom_js',
         'is_active',
+        'is_public',
         'sort_order',
     ];
 
@@ -29,6 +30,7 @@ class Page extends Model
         'custom_css' => 'array',
         'custom_js' => 'array',
         'is_active' => 'boolean',
+        'is_public' => 'boolean',
         'sort_order' => 'integer',
     ];
 }

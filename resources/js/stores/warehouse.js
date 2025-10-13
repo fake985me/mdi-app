@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { get, post, put, del } from '../lib/api'
 import { saveAs } from 'file-saver'
-import * as XLSX from 'xlsx'
+import * as ExcelJS from 'exceljs'
 
 export const useWarehouseStore = defineStore('warehouse', {
   state: () => ({
@@ -569,18 +569,25 @@ export const useWarehouseStore = defineStore('warehouse', {
           'Updated At': product.updated_at
         }))
         
-        // Create worksheet
-        const ws = XLSX.utils.json_to_sheet(exportData)
-        
         // Create workbook
-        const wb = XLSX.utils.book_new()
-        XLSX.utils.book_append_sheet(wb, ws, 'Products')
+        const workbook = new ExcelJS.Workbook()
+        const worksheet = workbook.addWorksheet('Products')
         
-        // Generate file
-        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
+        // Add headers
+        const headers = Object.keys(exportData[0] || {})
+        worksheet.addRow(headers)
+        
+        // Add data
+        exportData.forEach(item => {
+          const row = headers.map(header => item[header])
+          worksheet.addRow(row)
+        })
+        
+        // Generate buffer
+        const buffer = await workbook.xlsx.writeBuffer()
         
         // Save file
-        const blob = new Blob([wbout], { type: 'application/octet-stream' })
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
         saveAs(blob, `products_export_${new Date().toISOString().slice(0, 10)}.xlsx`)
         
         return { success: true, message: 'Products exported successfully' }
@@ -602,10 +609,29 @@ export const useWarehouseStore = defineStore('warehouse', {
           reader.onload = async (e) => {
             try {
               const data = new Uint8Array(e.target.result)
-              const workbook = XLSX.read(data, { type: 'array' })
+              const workbook = new ExcelJS.Workbook()
+              await workbook.xlsx.load(data)
               
-              const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
-              const importedData = XLSX.utils.sheet_to_json(firstSheet)
+              const worksheet = workbook.getWorksheet(1)
+              const importedData = []
+              
+              // Get headers from the first row
+              const headers = []
+              worksheet.getRow(1).eachCell((cell, colNumber) => {
+                headers[colNumber - 1] = cell.value
+              })
+              
+              // Process data rows
+              worksheet.eachRow((row, rowNumber) => {
+                // Skip header row
+                if (rowNumber === 1) return
+                
+                const rowData = {}
+                row.eachCell((cell, colNumber) => {
+                  rowData[headers[colNumber - 1]] = cell.value
+                })
+                importedData.push(rowData)
+              })
               
               // Process and save each product
               const results = {

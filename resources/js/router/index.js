@@ -118,6 +118,12 @@ const routes = [
     name: 'TemplateManager',
     component: () => import('../views/TemplateManager.vue'),
     meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/navigation',
+    name: 'NavigationManagement',
+    component: () => import('../views/NavigationManagement.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
   }
 ]
 

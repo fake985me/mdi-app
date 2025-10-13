@@ -14,10 +14,10 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // Create a test user only if it doesn't exist
-        if (!\App\Models\User::where('email', 'test@example.com')->exists()) {
+        if (!\App\Models\User::where('email', 'superadmin@example.com')->exists()) {
             \App\Models\User::factory()->create([
                 'name' => 'Test User',
-                'email' => 'test@example.com',
+                'email' => 'superadmin@example.com',
                 'role' => 'superadmin',
             ]);
         }

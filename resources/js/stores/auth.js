@@ -30,6 +30,14 @@ export const useAuthStore = defineStore('auth', () => {
       headers
     })
 
+    // Check if response is ok before parsing JSON
+    if (!response.ok && response.headers.get('content-type')?.includes('text/html')) {
+      // If the response is HTML (likely an error page), throw an error
+      const errorText = await response.text()
+      console.error('API request failed with HTML response:', errorText);
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
     if (response.status === 401) {
       // Token might be expired, clear auth data
       localStorage.removeItem('auth_token')
@@ -49,18 +57,27 @@ export const useAuthStore = defineStore('auth', () => {
         body: JSON.stringify({ email, password })
       })
 
-      const data = await response.json()
+      // Check if response has JSON content type before parsing
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json()
 
-      if (!response.ok) {
-        return { success: false, error: data.message || 'Login failed' }
+        if (!response.ok) {
+          return { success: false, error: data.message || 'Login failed' }
+        }
+
+        // Store token
+        localStorage.setItem('auth_token', data.token)
+        user.value = data.user
+        profile.value = data.profile
+
+        return { success: true }
+      } else {
+        // If response is not JSON, it might be an HTML error page
+        const errorText = await response.text();
+        console.error('Non-JSON response received:', errorText);
+        return { success: false, error: 'Server error - non-JSON response' }
       }
-
-      // Store token
-      localStorage.setItem('auth_token', data.token)
-      user.value = data.user
-      profile.value = data.profile
-
-      return { success: true }
     } catch (error) {
       console.error('Sign in error:', error)
       return { success: false, error: error.message }
@@ -82,18 +99,27 @@ export const useAuthStore = defineStore('auth', () => {
         })
       })
 
-      const data = await response.json()
+      // Check if response has JSON content type before parsing
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json()
 
-      if (!response.ok) {
-        return { success: false, error: data.message || 'Registration failed' }
+        if (!response.ok) {
+          return { success: false, error: data.message || 'Registration failed' }
+        }
+
+        // Store token
+        localStorage.setItem('auth_token', data.token)
+        user.value = data.user
+        profile.value = data.profile
+
+        return { success: true }
+      } else {
+        // If response is not JSON, it might be an HTML error page
+        const errorText = await response.text();
+        console.error('Non-JSON response received:', errorText);
+        return { success: false, error: 'Server error - non-JSON response' }
       }
-
-      // Store token
-      localStorage.setItem('auth_token', data.token)
-      user.value = data.user
-      profile.value = data.profile
-
-      return { success: true }
     } catch (error) {
       console.error('Sign up error:', error)
       return { success: false, error: error.message }
@@ -106,9 +132,22 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       // Only call logout API if user is authenticated
       if (user.value) {
-        await apiRequest('/api/logout', {
+        const response = await apiRequest('/api/logout', {
           method: 'POST'
         })
+
+        // Check if response has JSON content type before parsing
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const data = await response.json()
+          if (!response.ok) {
+            console.error('Logout error:', data.message || 'Logout failed')
+          }
+        } else {
+          // If response is not JSON, it might be an HTML error page
+          const errorText = await response.text();
+          console.error('Non-JSON response received:', errorText);
+        }
       }
     } catch (error) {
       console.error('Logout error:', error)
@@ -128,13 +167,22 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       const response = await apiRequest('/api/user')
-      const data = await response.json()
 
-      if (response.ok) {
-        profile.value = data.profile
-        user.value = data.user
+      // Check if response has JSON content type before parsing
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json()
+
+        if (response.ok) {
+          profile.value = data.profile
+          user.value = data.user
+        } else {
+          console.error('Profile fetch error:', data.message)
+        }
       } else {
-        console.error('Profile fetch error:', data.message)
+        // If response is not JSON, it might be an HTML error page
+        const errorText = await response.text();
+        console.error('Non-JSON response received:', errorText);
       }
     } catch (error) {
       console.error('Fetch profile error:', error)
@@ -150,13 +198,26 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       const response = await apiRequest('/api/user')
-      const data = await response.json()
 
-      if (response.ok) {
-        user.value = data.user
-        profile.value = data.profile
+      // Check if response has JSON content type before parsing
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json()
+
+        if (response.ok) {
+          user.value = data.user
+          profile.value = data.profile
+        } else {
+          // Token is invalid, clear it
+          localStorage.removeItem('auth_token')
+          user.value = null
+          profile.value = null
+        }
       } else {
-        // Token is invalid, clear it
+        // If response is not JSON, it might be an HTML error page
+        const errorText = await response.text();
+        console.error('Non-JSON response received:', errorText);
+        // Clear invalid session data
         localStorage.removeItem('auth_token')
         user.value = null
         profile.value = null

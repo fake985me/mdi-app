@@ -19,21 +19,22 @@
 
         <!-- Desktop Navigation -->
         <div class="hidden md:flex items-center space-x-8">
-          <a
-            href="/"
-            class="text-gray-700 hover:text-blue-600 transition-colors"
-            >{{ t('features') }}</a
-          >
-          <router-link
-            to="/catalog"
-            class="text-gray-700 hover:text-blue-600 transition-colors"
-            >{{ t('catalog') }}</router-link
-          >
-          <a
-            href="/"
-            class="text-gray-700 hover:text-blue-600 transition-colors"
-            >{{ t('contact') }}</a
-          >
+          <template v-for="item in navigationItems" :key="item.id">
+            <a
+              v-if="item.path.startsWith('http') || item.path.startsWith('/')"
+              :href="item.path"
+              class="text-gray-700 hover:text-blue-600 transition-colors"
+            >
+              {{ item.name }}
+            </a>
+            <router-link
+              v-else
+              :to="item.path"
+              class="text-gray-700 hover:text-blue-600 transition-colors"
+            >
+              {{ item.name }}
+            </router-link>
+          </template>
           <LanguageSelector />
           <div v-if="!authStore.isAuthenticated" class="flex items-center space-x-4">
             <router-link
@@ -87,21 +88,24 @@
         class="md:hidden border-t border-gray-200 py-4"
       >
         <div class="space-y-4">
-          <a
-            href="#features"
-            class="block text-gray-700 hover:text-blue-600 transition-colors"
-            >{{ t('features') }}</a
-          >
-          <router-link
-            to="/catalog"
-            class="block text-gray-700 hover:text-blue-600 transition-colors"
-            >{{ t('catalog') }}</router-link
-          >
-          <a
-            href="#contact"
-            class="block text-gray-700 hover:text-blue-600 transition-colors"
-            >{{ t('contact') }}</a
-          >
+          <template v-for="item in navigationItems" :key="item.id">
+            <a
+              v-if="item.path.startsWith('http') || item.path.startsWith('/')"
+              :href="item.path"
+              class="block text-gray-700 hover:text-blue-600 transition-colors"
+              @click="showMobileMenu = false"
+            >
+              {{ item.name }}
+            </a>
+            <router-link
+              v-else
+              :to="item.path"
+              class="block text-gray-700 hover:text-blue-600 transition-colors"
+              @click="showMobileMenu = false"
+            >
+              {{ item.name }}
+            </router-link>
+          </template>
           <div v-if="!authStore.isAuthenticated" class="pt-4 border-t border-gray-200 space-y-2">
             <router-link
               to="/login"
@@ -143,7 +147,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useLanguage } from '../composables/useLanguage';
@@ -154,6 +158,42 @@ const { t } = useLanguage();
 const router = useRouter();
 const authStore = useAuthStore();
 const showMobileMenu = ref(false);
+const navigationItems = ref([]);
+
+onMounted(async () => {
+  try {
+    // Fetch public navigation items
+    const response = await fetch('/api/public/navigation');
+    
+    // Check content type to determine if response is JSON
+    const contentType = response.headers.get('content-type');
+    
+    // Get response as text first
+    const responseText = await response.text();
+    
+    // If response is OK and content type indicates JSON, then parse it
+    if (response.ok && contentType && contentType.includes('application/json')) {
+      const data = JSON.parse(responseText);
+      navigationItems.value = data.data || [];
+    } else if (!response.ok) {
+      // If response is not OK, try to parse as JSON but handle failure gracefully
+      try {
+        const errorData = JSON.parse(responseText);
+        console.error('Failed to fetch navigation:', errorData.message || 'Failed to fetch navigation');
+      } catch (jsonError) {
+        // If error response is not JSON (e.g., HTML error page), provide a generic message
+        console.error('API returned non-JSON error response:', responseText.substring(0, 200) + '...');
+        console.error(`Server error: ${response.status} - ${response.statusText}`);
+      }
+    } else {
+      // If response is OK but not JSON, it's unexpected
+      console.error('API returned non-JSON response when JSON was expected:', responseText.substring(0, 200) + '...');
+      console.error('Server returned unexpected response format');
+    }
+  } catch (error) {
+    console.error('Error fetching navigation:', error);
+  }
+});
 
 const handleLogout = async () => {
   await authStore.signOut();

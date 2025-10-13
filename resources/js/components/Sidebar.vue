@@ -228,6 +228,7 @@ const navigation = computed(() => {
     baseNav.push({ name: 'All Pages', href: '/pages', icon: DocumentTextIcon })
     baseNav.push({ name: 'Page Builder', href: '/page-builder', icon: Squares2X2Icon })
     baseNav.push({ name: 'Page Templates', href: '/templates', icon: DocumentTextIcon })
+    baseNav.push({ name: 'Navigation Management', href: '/navigation', icon: Bars3Icon })
   }
 
   return baseNav
