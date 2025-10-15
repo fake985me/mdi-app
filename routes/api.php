@@ -90,6 +90,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/pages/{page}', [App\Http\Controllers\Api\PageController::class, 'update'])->name('pages.update');
     Route::patch('/pages/{page}', [App\Http\Controllers\Api\PageController::class, 'update'])->name('pages.update.patch');
     Route::delete('/pages/{page}', [App\Http\Controllers\Api\PageController::class, 'destroy'])->name('pages.destroy');
+    
+    // Page export routes
+    Route::post('/pages/{page}/export', [App\Http\Controllers\Api\PageExportController::class, 'exportPage']);
+    Route::delete('/pages/{page}/remove-from-public', [App\Http\Controllers\Api\PageExportController::class, 'removePage']);
 
 // Admin routes with role middleware
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {

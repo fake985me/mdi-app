@@ -13,11 +13,10 @@ class Warranty extends Model
 
     protected $fillable = [
         'product_id',
+        'customer_id',
         'warranty_start_date',
         'warranty_end_date',
         'warranty_terms',
-        'customer_name',
-        'customer_contact',
     ];
 
     public $timestamps = true;
@@ -33,5 +32,13 @@ class Warranty extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class, 'product_id', 'id');
+    }
+
+    /**
+     * Get the customer associated with this warranty.
+     */
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class, 'customer_id', 'id');
     }
 }

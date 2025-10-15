@@ -4,6 +4,9 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use App\Models\StockMovement;
+use App\Models\Product;
+use App\Models\User;
 
 class StockMovementsTableSeeder extends Seeder
 {
@@ -12,47 +15,51 @@ class StockMovementsTableSeeder extends Seeder
      */
     public function run(): void
     {
-        // Get a profile and products for stock movements
-        $profile = \App\Models\Profile::first();
-        $products = \App\Models\Product::limit(4)->get();
+        // Get users and products for stock movements
+        $users = User::all();
+        $products = Product::all();
         
-        foreach($products as $product) {
-            // Check if similar stock movements already exist for this product
-            $existingIncoming = \App\Models\StockMovement::where('product_id', $product->id)
-                ->where('movement_type', 'incoming')
-                ->where('quantity', 10)
-                ->first();
-                
-            if (!$existingIncoming) {
-                // Incoming stock movement
-                \App\Models\StockMovement::create([
-                    'product_id' => $product->id,
-                    'movement_type' => 'incoming',
-                    'quantity' => 10,
-                    'unit_price' => $product->cost_price,
-                    'total_amount' => $product->cost_price * 10,
-                    'notes' => 'Initial stock addition for ' . $product->name,
-                    'created_by' => $profile->id,
-                ]);
-            }
+        if ($users->count() === 0 || $products->count() === 0) {
+            return; // Don't create stock movements if required data doesn't exist
+        }
+
+        // Create 20 sample stock movements
+        for ($i = 0; $i < 20; $i++) {
+            $user = $users->random();
+            $product = $products->random();
             
-            $existingOutgoing = \App\Models\StockMovement::where('product_id', $product->id)
-                ->where('movement_type', 'outgoing')
-                ->where('quantity', 2)
-                ->first();
-                
-            if (!$existingOutgoing) {
-                // Outgoing stock movement (sale)
-                \App\Models\StockMovement::create([
-                    'product_id' => $product->id,
-                    'movement_type' => 'outgoing',
-                    'quantity' => 2,
-                    'unit_price' => $product->price,
-                    'total_amount' => $product->price * 2,
-                    'notes' => 'Stock reduction for sale of ' . $product->name,
-                    'created_by' => $profile->id,
-                ]);
-            }
+            // Randomly determine movement type and details
+            $movementTypes = ['incoming', 'outgoing', 'purchase', 'sale', 'borrow', 'return'];
+            $movementType = $movementTypes[array_rand($movementTypes)];
+            
+            // Determine quantity based on movement type
+            $quantity = match($movementType) {
+                'incoming', 'purchase' => rand(5, 30),
+                'outgoing', 'sale' => rand(1, 5),
+                'borrow' => rand(1, 3),
+                'return' => rand(1, 3),
+                default => rand(1, 10)
+            };
+            
+            // Determine price based on movement type
+            $unitPrice = match($movementType) {
+                'incoming', 'purchase' => $product->cost_price ?: rand(50, 500),
+                'outgoing', 'sale' => $product->price ?: rand(60, 600),
+                default => ($product->cost_price + $product->price) / 2
+            };
+            
+            $totalAmount = $quantity * $unitPrice;
+            
+            // Create stock movement
+            StockMovement::create([
+                'product_id' => $product->id,
+                'user_id' => $user->id,
+                'movement_type' => $movementType,
+                'quantity' => $quantity,
+                'unit_price' => $unitPrice,
+                'total_amount' => $totalAmount,
+                'notes' => 'Stock ' . $movementType . ' for ' . $product->name . ' by ' . $user->name,
+            ]);
         }
     }
 }

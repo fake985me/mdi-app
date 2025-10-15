@@ -7,11 +7,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -22,6 +23,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
     ];
 
     /**
@@ -48,10 +50,34 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the profile associated with the user.
+     * Get the purchases made by this user.
      */
-    public function profile(): HasOne
+    public function purchases(): HasMany
     {
-        return $this->hasOne(Profile::class);
+        return $this->hasMany(Purchase::class, 'user_id');
+    }
+
+    /**
+     * Get the sales made by this user.
+     */
+    public function sales(): HasMany
+    {
+        return $this->hasMany(Sale::class, 'user_id');
+    }
+
+    /**
+     * Get the stock movements created by this user.
+     */
+    public function stockMovements(): HasMany
+    {
+        return $this->hasMany(StockMovement::class, 'user_id');
+    }
+
+    /**
+     * Get the borrowings created by this user.
+     */
+    public function borrowings(): HasMany
+    {
+        return $this->hasMany(Borrowing::class, 'user_id');
     }
 }

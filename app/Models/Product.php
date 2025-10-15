@@ -23,6 +23,7 @@ class Product extends Model
         'sku',
         'category_id',
         'subcategory_id',
+        'brand_id',
         'image_url',
         'status',
     ];
@@ -32,7 +33,6 @@ class Product extends Model
     protected $casts = [
         'price' => 'decimal:2',
         'current_stock' => 'integer',
-        'status' => 'boolean',
     ];
 
     /**
@@ -52,10 +52,58 @@ class Product extends Model
     }
 
     /**
+     * Get the brand that owns the product.
+     */
+    public function brand(): BelongsTo
+    {
+        return $this->belongsTo(Brand::class);
+    }
+
+    /**
      * Get the orders for this product.
      */
     public function orders(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    /**
+     * Get the stock movements for this product.
+     */
+    public function stockMovements(): HasMany
+    {
+        return $this->hasMany(StockMovement::class);
+    }
+
+    /**
+     * Get the warranties for this product.
+     */
+    public function warranties(): HasMany
+    {
+        return $this->hasMany(Warranty::class);
+    }
+
+    /**
+     * Get the borrowings for this product.
+     */
+    public function borrowings(): HasMany
+    {
+        return $this->hasMany(Borrowing::class);
+    }
+
+    /**
+     * Get the product specifications for this product.
+     */
+    public function specifications(): HasMany
+    {
+        return $this->hasMany(ProductSpecification::class);
+    }
+
+    /**
+     * Get the product images for this product.
+     */
+    public function images(): HasMany
+    {
+        return $this->hasMany(ProductImage::class);
     }
 }

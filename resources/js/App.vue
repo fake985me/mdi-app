@@ -15,8 +15,8 @@
 import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from './stores/auth'
-import Sidebar from "./components/Sidebar.vue"
-import LandingNavbar from './components/LandingNavbar.vue'
+import Sidebar from "./admin/components/Sidebar.vue"
+import LandingNavbar from './public/components/LandingNavbar.vue'
 
 const route = useRoute()
 const authStore = useAuthStore()

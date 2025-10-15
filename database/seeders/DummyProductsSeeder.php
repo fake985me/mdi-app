@@ -230,6 +230,14 @@ class DummyProductsSeeder extends Seeder
         foreach ($allProducts as $productData) {
             // Check if product with SKU already exists to prevent duplicates
             if (!\App\Models\Product::where('sku', $productData['sku'])->exists()) {
+                // Randomly assign brands to products
+                $brands = \App\Models\Brand::all();
+                if ($brands->count() > 0) {
+                    $productData['brand_id'] = $brands->random()->id;
+                }
+                
+                $productData['status'] = true; // Adding the status field
+                
                 \App\Models\Product::create($productData);
             }
         }

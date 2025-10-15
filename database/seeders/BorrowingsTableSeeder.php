@@ -4,6 +4,10 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use App\Models\Borrowing;
+use App\Models\Customer;
+use App\Models\Product;
+use App\Models\User;
 
 class BorrowingsTableSeeder extends Seeder
 {
@@ -12,29 +16,36 @@ class BorrowingsTableSeeder extends Seeder
      */
     public function run(): void
     {
-        // Get a profile and products for borrowing
-        $profile = \App\Models\Profile::first();
-        $products = \App\Models\Product::limit(2)->get();
+        // Get users, customers, and products for borrowings
+        $users = User::all();
+        $customers = Customer::all();
+        $products = Product::all();
         
-        foreach($products as $product) {
-            // Check if a borrowing already exists for this product
-            $existingBorrowing = \App\Models\Borrowing::where('product_id', $product->id)
-                ->where('borrower_name', 'Borrower ' . $product->name)
-                ->first();
-                
-            if (!$existingBorrowing) {
-                \App\Models\Borrowing::create([
-                    'product_id' => $product->id,
-                    'borrower_name' => 'Borrower ' . $product->name,
-                    'borrower_contact' => 'borrower@example.com',
-                    'quantity' => 1,
-                    'borrow_date' => now(),
-                    'expected_return_date' => now()->addWeeks(2),
-                    'status' => 'active',
-                    'notes' => 'Borrowed ' . $product->name . ' for testing purposes',
-                    'created_by' => $profile->id,
-                ]);
-            }
+        if ($users->count() === 0 || $customers->count() === 0 || $products->count() === 0) {
+            return; // Don't create borrowings if required data doesn't exist
+        }
+
+        // Create 10 sample borrowings
+        for ($i = 0; $i < 10; $i++) {
+            $user = $users->random();
+            $customer = $customers->random();
+            $product = $products->random();
+            
+            // Determine if the borrowing is still active or returned
+            $status = rand(0, 1) ? 'active' : 'returned'; // 50% chance of being returned
+            
+            // Create borrowing
+            $borrowing = Borrowing::create([
+                'product_id' => $product->id,
+                'customer_id' => $customer->id,
+                'user_id' => $user->id,
+                'quantity' => rand(1, 3),
+                'borrow_date' => now()->subDays(rand(1, 60)), // Borrowed 1-60 days ago
+                'expected_return_date' => now()->addDays(rand(1, 30)), // Expected return in 1-30 days
+                'actual_return_date' => $status === 'returned' ? now()->subDays(rand(0, 5)) : null,
+                'status' => $status,
+                'notes' => 'Borrowed ' . $product->name . ' by ' . $customer->name,
+            ]);
         }
     }
 }

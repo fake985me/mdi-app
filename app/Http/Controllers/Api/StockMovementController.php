@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\StockMovement;
 use App\Models\Product;
-use App\Models\Profile;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -16,7 +16,7 @@ class StockMovementController extends Controller
      */
     public function index(): JsonResponse
     {
-        $movements = StockMovement::with(['product', 'createdBy'])->orderBy('created_at', 'desc')->get();
+        $movements = StockMovement::with(['product', 'user'])->orderBy('created_at', 'desc')->get();
         
         return response()->json([
             'success' => true,
@@ -36,7 +36,7 @@ class StockMovementController extends Controller
             'unit_price' => 'nullable|numeric|min:0',
             'total_amount' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
-            'created_by' => 'nullable|exists:profiles,id',
+            'user_id' => 'nullable|exists:users,id',
         ]);
 
         $movement = StockMovement::create($request->all());
@@ -60,7 +60,7 @@ class StockMovementController extends Controller
      */
     public function show(string $id): JsonResponse
     {
-        $movement = StockMovement::with(['product', 'createdBy'])->findOrFail($id);
+        $movement = StockMovement::with(['product', 'user'])->findOrFail($id);
 
         return response()->json([
             'success' => true,
@@ -82,7 +82,7 @@ class StockMovementController extends Controller
             'unit_price' => 'sometimes|nullable|numeric|min:0',
             'total_amount' => 'sometimes|nullable|numeric|min:0',
             'notes' => 'sometimes|nullable|string',
-            'created_by' => 'sometimes|nullable|exists:profiles,id',
+            'user_id' => 'sometimes|nullable|exists:users,id',
         ]);
 
         $movement->update($request->all());

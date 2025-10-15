@@ -3,10 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Models\Profile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
@@ -14,22 +12,25 @@ class UserController extends Controller
     /**
      * Display a listing of the users.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $profiles = Profile::with('user')->get();
+        // Check if the authenticated user has permission to view users
+        $user = $request->user();
+        if ($user->role !== 'superadmin' && $user->role !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized access to user management'
+            ], 403);
+        }
+
+        // Only return users if the requesting user is a superadmin or admin
+        $users = User::when($user->role !== 'superadmin', function ($query) {
+            return $query->where('role', '!=', 'superadmin');
+        })
+        ->select(['id', 'name', 'email', 'role', 'created_at'])
+        ->get();
         
-        // Format the response to match what the frontend expects
         return response()->json([
-            'data' => $profiles->map(function ($profile) {
-                return [
-                    'id' => $profile->id,
-                    'full_name' => $profile->full_name,
-                    'email' => $profile->email,
-                    'role' => $profile->role,
-                    'created_at' => $profile->created_at,
-                    'user_id' => $profile->user_id
-                ];
-            })
+            'data' => $users
         ]);
     }
 
@@ -38,6 +39,14 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
+        // Check if the authenticated user has permission to create users
+        $user = $request->user();
+        if ($user->role !== 'superadmin') {
+            return response()->json([
+                'message' => 'Only superadmins can create users'
+            ], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
@@ -57,38 +66,32 @@ class UserController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-        ]);
-
-        // Create profile for the user
-        $profile = Profile::create([
-            'user_id' => $user->id,
-            'full_name' => $request->name,
-            'email' => $request->email,
-            'role' => $request->role ?? 'user'
+            'role' => $request->role
         ]);
 
         return response()->json([
             'message' => 'User created successfully',
-            'user' => $profile
+            'user' => $user
         ], 201);
     }
 
     /**
      * Display the specified user.
      */
-    public function show($id)
+    public function show($id, Request $request)
     {
-        $profile = Profile::with('user')->findOrFail($id);
+        $user = $request->user();
+        $targetUser = User::findOrFail($id);
+        
+        // Check if the authenticated user has permission to view this user
+        if ($user->role !== 'superadmin' && ($user->role !== 'admin' || $targetUser->role === 'superadmin')) {
+            return response()->json([
+                'message' => 'Unauthorized access to user details'
+            ], 403);
+        }
         
         return response()->json([
-            'data' => [
-                'id' => $profile->id,
-                'full_name' => $profile->full_name,
-                'email' => $profile->email,
-                'role' => $profile->role,
-                'created_at' => $profile->created_at,
-                'user_id' => $profile->user_id
-            ]
+            'data' => $targetUser
         ]);
     }
 
@@ -97,10 +100,21 @@ class UserController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $profile = Profile::findOrFail($id);
+        $authUser = $request->user();
+        $targetUser = User::findOrFail($id);
+        
+        // Check if the authenticated user has permission to update this user
+        if ($authUser->role !== 'superadmin' && 
+            ($authUser->role !== 'admin' || $targetUser->role === 'superadmin' || $targetUser->id === $authUser->id)) {
+            return response()->json([
+                'message' => 'Unauthorized access to update this user'
+            ], 403);
+        }
         
         $validator = Validator::make($request->all(), [
-            'full_name' => 'sometimes|string|max:255',
+            'name' => 'sometimes|string|max:255',
+            'email' => 'sometimes|string|email|max:255|unique:users,email,' . $id,
+            'password' => 'sometimes|string|min:8|confirmed',
             'role' => 'sometimes|in:user,admin,superadmin'
         ]);
 
@@ -111,28 +125,43 @@ class UserController extends Controller
             ], 422);
         }
 
-        $profile->update($request->only(['full_name', 'role']));
-
-        // Update the associated user name as well
-        if ($request->has('full_name')) {
-            $profile->user->update(['name' => $request->full_name]);
+        // Update user data
+        $updateData = $request->only(['name', 'email', 'role']);
+        if ($request->filled('password')) {
+            $updateData['password'] = Hash::make($request->password);
         }
+        
+        $targetUser->update($updateData);
 
         return response()->json([
             'message' => 'User updated successfully',
-            'user' => $profile
+            'user' => $targetUser
         ]);
     }
 
     /**
      * Remove the specified user from storage.
      */
-    public function destroy($id)
+    public function destroy($id, Request $request)
     {
-        $profile = Profile::findOrFail($id);
+        $authUser = $request->user();
+        $targetUser = User::findOrFail($id);
         
-        // Delete the associated user which will cascade delete the profile
-        $profile->user->delete();
+        // Check if the authenticated user has permission to delete this user
+        if ($authUser->role !== 'superadmin' || $targetUser->role === 'superadmin') {
+            return response()->json([
+                'message' => 'Unauthorized access to delete this user. Only superadmins can delete users, and superadmins cannot delete other superadmins.'
+            ], 403);
+        }
+        
+        // Don't delete self
+        if ($authUser->id === $targetUser->id) {
+            return response()->json([
+                'message' => 'You cannot delete your own account'
+            ], 400);
+        }
+        
+        $targetUser->delete();
 
         return response()->json([
             'message' => 'User deleted successfully'

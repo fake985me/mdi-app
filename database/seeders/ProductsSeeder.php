@@ -206,6 +206,13 @@ class ProductsSeeder extends Seeder
         
         foreach ($products as $productData) {
             $productData['status'] = true; // Adding the missing status field
+            
+            // Randomly assign brands to products
+            $brands = \App\Models\Brand::all();
+            if ($brands->count() > 0) {
+                $productData['brand_id'] = $brands->random()->id;
+            }
+            
             Product::firstOrCreate(
                 ['sku' => $productData['sku']],
                 $productData

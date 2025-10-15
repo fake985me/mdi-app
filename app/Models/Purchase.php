@@ -12,12 +12,11 @@ class Purchase extends Model
     use HasFactory, HasUuids;
 
     protected $fillable = [
-        'supplier_name',
-        'supplier_contact',
+        'user_id',
+        'supplier_id',
         'purchase_date',
         'total_amount',
         'notes',
-        'created_by',
     ];
 
     public $timestamps = true;
@@ -30,8 +29,24 @@ class Purchase extends Model
     /**
      * Get the user who created this purchase.
      */
-    public function createdBy(): BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(Profile::class, 'created_by', 'id');
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * Get the supplier for this purchase.
+     */
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class, 'supplier_id');
+    }
+
+    /**
+     * Get the purchase items for this purchase.
+     */
+    public function items()
+    {
+        return $this->hasMany(PurchaseItem::class);
     }
 }

@@ -13,15 +13,14 @@ class Borrowing extends Model
 
     protected $fillable = [
         'product_id',
-        'borrower_name',
-        'borrower_contact',
+        'customer_id',
+        'user_id',
         'quantity',
         'borrow_date',
         'expected_return_date',
         'actual_return_date',
         'status',
         'notes',
-        'created_by',
     ];
 
     public $timestamps = true;
@@ -43,10 +42,18 @@ class Borrowing extends Model
     }
 
     /**
+     * Get the customer associated with this borrowing.
+     */
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class, 'customer_id', 'id');
+    }
+
+    /**
      * Get the user who created this borrowing.
      */
-    public function createdBy(): BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(Profile::class, 'created_by', 'id');
+        return $this->belongsTo(User::class, 'user_id', 'id');
     }
 }

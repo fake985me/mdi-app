@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Models\Profile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -38,26 +37,6 @@ class AuthController extends Controller
                 ], 401);
             }
 
-            // Check if user has a profile, create one if not
-            $profile = Profile::where('user_id', (string)$user->id)->first();
-            if (!$profile) {
-                // If no profile with this user_id, try to find by email
-                $profile = Profile::where('email', $user->email)->first();
-                if ($profile) {
-                    // Update existing profile with user_id to link it
-                    $profile->user_id = (string)$user->id;
-                    $profile->save();
-                } else {
-                    // Create new profile
-                    $profile = Profile::create([
-                        'user_id' => (string)$user->id,
-                        'email' => $user->email,
-                        'full_name' => $user->name,
-                        'role' => 'user'
-                    ]);
-                }
-            }
-
             $token = $user->createToken('auth_token')->plainTextToken;
 
             return response()->json([
@@ -66,8 +45,8 @@ class AuthController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
+                    'role' => $user->role,
                 ],
-                'profile' => $profile,
                 'token' => $token,
                 'token_type' => 'Bearer',
             ]);
@@ -103,25 +82,8 @@ class AuthController extends Controller
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
+                'role' => 'user' // Default role for new users
             ]);
-
-            // Create profile for the user
-            // Check if a profile already exists for this email
-            $profile = Profile::where('email', $request->email)->first();
-            if ($profile) {
-                // Update existing profile with user_id to link it
-                $profile->user_id = (string)$user->id;
-                $profile->full_name = $request->name;
-                $profile->save();
-            } else {
-                // Create new profile
-                $profile = Profile::create([
-                    'user_id' => (string)$user->id,
-                    'full_name' => $request->name,
-                    'email' => $request->email,
-                    'role' => 'user'
-                ]);
-            }
 
             $token = $user->createToken('auth_token')->plainTextToken;
 
@@ -130,9 +92,9 @@ class AuthController extends Controller
                 'user' => [
                     'id' => $user->id,
                     'name' => $user->name,
-                    'email' => $request->email,
+                    'email' => $user->email,
+                    'role' => $user->role,
                 ],
-                'profile' => $profile,
                 'token' => $token,
                 'token_type' => 'Bearer',
             ]);
@@ -171,11 +133,21 @@ class AuthController extends Controller
     public function user(Request $request)
     {
         try {
-            $profile = Profile::where('user_id', (string)$request->user()->id)->first();
+            $user = $request->user();
 
             return response()->json([
-                'user' => $request->user(),
-                'profile' => $profile
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                ],
+                'profile' => [
+                    'id' => $user->id,
+                    'email' => $user->email,
+                    'full_name' => $user->name,
+                    'role' => $user->role,
+                ]
             ]);
         } catch (\Exception $e) {
             \Log::error('User details fetch error: ' . $e->getMessage());

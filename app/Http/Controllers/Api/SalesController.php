@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Sale;
-use App\Models\Profile;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -15,7 +15,7 @@ class SalesController extends Controller
      */
     public function index(): JsonResponse
     {
-        $sales = Sale::with(['createdBy'])->orderBy('created_at', 'desc')->get();
+        $sales = Sale::with(['user', 'customer'])->orderBy('created_at', 'desc')->get();
         
         return response()->json([
             'success' => true,
@@ -29,11 +29,10 @@ class SalesController extends Controller
     public function store(Request $request): JsonResponse
     {
         $request->validate([
-            'customer_name' => 'nullable|string|max:255',
-            'customer_contact' => 'nullable|string|max:255',
+            'customer_id' => 'nullable|exists:customers,id',
             'total_amount' => 'required|numeric|min:0',
             'notes' => 'nullable|string',
-            'created_by' => 'nullable|exists:profiles,id',
+            'user_id' => 'nullable|exists:users,id',
         ]);
 
         $sale = Sale::create($request->all());
@@ -49,7 +48,7 @@ class SalesController extends Controller
      */
     public function show(string $id): JsonResponse
     {
-        $sale = Sale::with(['createdBy'])->findOrFail($id);
+        $sale = Sale::with(['user', 'customer'])->findOrFail($id);
 
         return response()->json([
             'success' => true,
@@ -65,11 +64,10 @@ class SalesController extends Controller
         $sale = Sale::findOrFail($id);
 
         $request->validate([
-            'customer_name' => 'sometimes|nullable|string|max:255',
-            'customer_contact' => 'sometimes|nullable|string|max:255',
+            'customer_id' => 'sometimes|nullable|exists:customers,id',
             'total_amount' => 'sometimes|required|numeric|min:0',
             'notes' => 'sometimes|nullable|string',
-            'created_by' => 'sometimes|nullable|exists:profiles,id',
+            'user_id' => 'sometimes|nullable|exists:users,id',
         ]);
 
         $sale->update($request->all());

@@ -13,12 +13,12 @@ class StockMovement extends Model
 
     protected $fillable = [
         'product_id',
+        'user_id',
         'movement_type',
         'quantity',
         'unit_price',
         'total_amount',
         'notes',
-        'created_by',
     ];
 
     public $timestamps = false;
@@ -43,8 +43,8 @@ class StockMovement extends Model
     /**
      * Get the user who created this stock movement.
      */
-    public function createdBy(): BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(Profile::class, 'created_by', 'id');
+        return $this->belongsTo(User::class, 'user_id', 'id');
     }
 }

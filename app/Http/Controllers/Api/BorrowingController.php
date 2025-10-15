@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Borrowing;
 use App\Models\Product;
-use App\Models\Profile;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -16,7 +16,7 @@ class BorrowingController extends Controller
      */
     public function index(): JsonResponse
     {
-        $borrowings = Borrowing::with(['product', 'createdBy'])->orderBy('created_at', 'desc')->get();
+        $borrowings = Borrowing::with(['product', 'user', 'customer'])->orderBy('created_at', 'desc')->get();
         
         return response()->json([
             'success' => true,
@@ -31,12 +31,11 @@ class BorrowingController extends Controller
     {
         $request->validate([
             'product_id' => 'required|exists:products,id',
-            'borrower_name' => 'required|string|max:255',
-            'borrower_contact' => 'nullable|string|max:255',
+            'customer_id' => 'required|exists:customers,id',
             'quantity' => 'required|integer|min:1',
             'expected_return_date' => 'required|date',
             'notes' => 'nullable|string',
-            'created_by' => 'nullable|exists:profiles,id',
+            'user_id' => 'nullable|exists:users,id',
         ]);
 
         $borrowing = Borrowing::create($request->all());
@@ -56,7 +55,7 @@ class BorrowingController extends Controller
      */
     public function show(string $id): JsonResponse
     {
-        $borrowing = Borrowing::with(['product', 'createdBy'])->findOrFail($id);
+        $borrowing = Borrowing::with(['product', 'user', 'customer'])->findOrFail($id);
 
         return response()->json([
             'success' => true,
@@ -73,14 +72,13 @@ class BorrowingController extends Controller
 
         $request->validate([
             'product_id' => 'sometimes|required|exists:products,id',
-            'borrower_name' => 'sometimes|required|string|max:255',
-            'borrower_contact' => 'sometimes|nullable|string|max:255',
+            'customer_id' => 'sometimes|required|exists:customers,id',
             'quantity' => 'sometimes|required|integer|min:1',
             'expected_return_date' => 'sometimes|required|date',
             'actual_return_date' => 'nullable|date',
             'status' => 'sometimes|in:active,returned,overdue',
             'notes' => 'sometimes|nullable|string',
-            'created_by' => 'sometimes|nullable|exists:profiles,id',
+            'user_id' => 'sometimes|nullable|exists:users,id',
         ]);
 
         $borrowing->update($request->all());

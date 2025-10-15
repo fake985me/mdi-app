@@ -12,12 +12,11 @@ class Sale extends Model
     use HasFactory, HasUuids;
 
     protected $fillable = [
-        'customer_name',
-        'customer_contact',
+        'user_id',
+        'customer_id',
         'sale_date',
         'total_amount',
         'notes',
-        'created_by',
     ];
 
     public $timestamps = true;
@@ -30,8 +29,24 @@ class Sale extends Model
     /**
      * Get the user who created this sale.
      */
-    public function createdBy(): BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(Profile::class, 'created_by', 'id');
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * Get the customer for this sale.
+     */
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class, 'customer_id');
+    }
+
+    /**
+     * Get the sale items for this sale.
+     */
+    public function items()
+    {
+        return $this->hasMany(SaleItem::class);
     }
 }

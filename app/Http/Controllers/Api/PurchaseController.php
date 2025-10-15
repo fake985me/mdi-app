@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Purchase;
-use App\Models\Profile;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -15,7 +15,7 @@ class PurchaseController extends Controller
      */
     public function index(): JsonResponse
     {
-        $purchases = Purchase::with(['createdBy'])->orderBy('created_at', 'desc')->get();
+        $purchases = Purchase::with(['user', 'supplier'])->orderBy('created_at', 'desc')->get();
         
         return response()->json([
             'success' => true,
@@ -29,11 +29,10 @@ class PurchaseController extends Controller
     public function store(Request $request): JsonResponse
     {
         $request->validate([
-            'supplier_name' => 'required|string|max:255',
-            'supplier_contact' => 'nullable|string|max:255',
+            'supplier_id' => 'required|exists:suppliers,id',
             'total_amount' => 'required|numeric|min:0',
             'notes' => 'nullable|string',
-            'created_by' => 'nullable|exists:profiles,id',
+            'user_id' => 'nullable|exists:users,id',
         ]);
 
         $purchase = Purchase::create($request->all());
@@ -49,7 +48,7 @@ class PurchaseController extends Controller
      */
     public function show(string $id): JsonResponse
     {
-        $purchase = Purchase::with(['createdBy'])->findOrFail($id);
+        $purchase = Purchase::with(['user', 'supplier'])->findOrFail($id);
 
         return response()->json([
             'success' => true,
@@ -65,11 +64,10 @@ class PurchaseController extends Controller
         $purchase = Purchase::findOrFail($id);
 
         $request->validate([
-            'supplier_name' => 'sometimes|required|string|max:255',
-            'supplier_contact' => 'sometimes|nullable|string|max:255',
+            'supplier_id' => 'sometimes|required|exists:suppliers,id',
             'total_amount' => 'sometimes|required|numeric|min:0',
             'notes' => 'sometimes|nullable|string',
-            'created_by' => 'sometimes|nullable|exists:profiles,id',
+            'user_id' => 'sometimes|nullable|exists:users,id',
         ]);
 
         $purchase->update($request->all());

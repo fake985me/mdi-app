@@ -6,12 +6,29 @@ use Illuminate\Http\Request;
 use App\Models\Page;
 use App\Models\LandingPageSetting;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Session;
 
 class SpaController extends Controller
 {
     public function index(Request $request, $any = null)
     {
+        // Check if there's a static blade file for this route first
+        if ($any) {
+            // Check if a static blade file exists for this route
+            $staticViewPath = public_path('views/' . $any . '.blade.php');
+            if (File::exists($staticViewPath)) {
+                // Return the static blade file instead of the SPA
+                return view('views.' . $any);
+            }
+        } else {
+            // Check for home page static file
+            $homeStaticViewPath = public_path('views/home.blade.php');
+            if (File::exists($homeStaticViewPath)) {
+                return view('views.home');
+            }
+        }
+
         // For public routes that need to be handled by the SPA
         // Check if it's a page slug
         if ($any && $any !== 'api' && $any !== 'storage') {
@@ -36,6 +53,14 @@ class SpaController extends Controller
             }
         }
         
+        return view('welcome', [
+            'currentLocale' => Session::get('language', App::getLocale())
+        ]);
+    }
+    
+    public function product(Request $request)
+    {
+        // Return the SPA view to let Vue Router handle the product page
         return view('welcome', [
             'currentLocale' => Session::get('language', App::getLocale())
         ]);
